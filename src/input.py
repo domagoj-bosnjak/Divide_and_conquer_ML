@@ -2,11 +2,10 @@ import csv
 import cv2
 import math
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+# import numpy as np
 
-from numpy.random import default_rng
-from sklearn.decomposition import PCA
+from skimage.color import rgb2gray
+
 
 # TODO: MODULE PURPOSE
 #   --Loading images and labels
@@ -17,13 +16,11 @@ def read_traffic_signs(root_path, image_range=43):
     """
     Reading images and labels from files
 
-    Args:
-        root_path: path to the folder Images
-        image_range: how many classes are being used (less than 43 for testing)
+    :param root_path: path to the folder Images
+    :param image_range: how many classes are being used (less than 43 for testing)
 
-    Returns:
-        images: a numpy array of images
-        labels: a numpy array of labels of corresponding images,
+    :return: images: a numpy array of images
+    :return: labels: a numpy array of labels of corresponding images,
                     values in interval [0,42]
     """
 
@@ -43,7 +40,21 @@ def read_traffic_signs(root_path, image_range=43):
             labels.append(row[7])
 
         gt_file.close()
+
+    # Can this be avoided?!
+    images = images_grayscale(images)
+
     return images, labels
+
+
+def images_grayscale(images):
+    """
+    Convert a list of images from RGB to grayscale
+    """
+
+    images_gray = [rgb2gray(image) for image in images]
+
+    return images_gray
 
 
 def determine_minimum_dimensions(images):
@@ -74,19 +85,8 @@ def resize_images(images, dimension_m=30, dimension_n=30):
     """
     images_resized = []
 
-    for i in range(len(trainImages)):
+    for i in range(len(images)):
         images_resized.append(
             cv2.resize(images[i], dsize=(dimension_m, dimension_n), interpolation=cv2.INTER_CUBIC))
 
     return images_resized
-
-
-if __name__ == '__main__':
-
-    trainImages, trainLabels = read_traffic_signs('', image_range=5)
-
-    for k in range(len(trainLabels)):
-        if k%100 == 0:
-            print("Label: ", trainLabels[k])
-            # plt.imshow(trainImages[k])
-            # plt.show()
