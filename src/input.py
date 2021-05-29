@@ -8,8 +8,8 @@ from skimage.color import rgb2gray
 
 
 # TODO: MODULE PURPOSE
-#   --Loading images and labels
-#   --Equalizing dimensions of images
+#   --Loading images and labels         [DONE]
+#   --Equalizing dimensions of images   [DONE]
 
 
 def read_traffic_signs(root_path, image_range=43):
@@ -90,3 +90,16 @@ def resize_images(images, dimension_m=30, dimension_n=30):
             cv2.resize(images[i], dsize=(dimension_m, dimension_n), interpolation=cv2.INTER_CUBIC))
 
     return images_resized
+
+
+def test_input():
+    """
+    Function to be used for testing purposes only!!
+
+    :return: train_images_resized : A list of images (grayscale and resized)
+    :return: train_labels : A list of labels
+    """
+    train_images, train_labels = read_traffic_signs('', image_range=5)
+    train_images_resized = resize_images(train_images)
+
+    return train_images_resized, train_labels
