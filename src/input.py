@@ -3,6 +3,7 @@ import cv2
 import math
 import matplotlib.pyplot as plt
 # import numpy as np
+import numpy as np
 
 from skimage.color import rgb2gray
 
@@ -12,12 +13,13 @@ from skimage.color import rgb2gray
 #   --Equalizing dimensions of images   [DONE]
 
 
-def read_traffic_signs(root_path, image_range=43):
+def read_traffic_signs(root_path, image_range=43, grayscale=True):
     """
     Reading images and labels from files
 
-    :param root_path: path to the folder Images
-    :param image_range: how many classes are being used (less than 43 for testing)
+    :param root_path    : path to the folder Images
+    :param image_range  : how many classes are being used (less than 43 for testing)
+    :param grayscale    : should the images be converted from RGB to grayscale
 
     :return: images: a numpy array of images
     :return: labels: a numpy array of labels of corresponding images,
@@ -42,7 +44,8 @@ def read_traffic_signs(root_path, image_range=43):
         gt_file.close()
 
     # Can this be avoided?!
-    images = images_grayscale(images)
+    if grayscale:
+        images = images_grayscale(images)
 
     return images, labels
 
@@ -90,6 +93,41 @@ def resize_images(images, dimension_m=30, dimension_n=30):
             cv2.resize(images[i], dsize=(dimension_m, dimension_n), interpolation=cv2.INTER_CUBIC))
 
     return images_resized
+
+
+def extract_single_class(images, labels, class_number, features=None, extract_features=False):
+    """
+    Extract images that belong to one specific class
+    (OPTIONAL) extract features alongisde the images
+
+    :param images           : list of images
+    :param labels           : list of labels
+    :param class_number     : which class number to extract
+
+    :param features         : feature matrix, if the features should be extracted as well
+    :param extract_features : should features be extracted as well
+    """
+    if not 0 <= int(class_number) <= 42:
+        raise ValueError("Wrong class number!")
+
+    images_extracted = []
+    features_extracted = []
+
+    for i in range(len(images)):
+        if labels[i] == class_number:
+            images_extracted.append(images[i])
+            if extract_features:
+                features_extracted.append(features[i])
+
+    # print(np.asarray(images).shape)
+    # print(np.asarray(images_extracted).shape)
+    # print(np.asarray(features).shape)
+    # print(np.asarray(features_extracted).shape)
+
+    if extract_features:
+        return images_extracted, features_extracted
+    else:
+        return images_extracted
 
 
 def test_input():
