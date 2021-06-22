@@ -1,10 +1,10 @@
 import numpy as np
+
 from skimage import transform
 from skimage.feature import haar_like_feature
 
 # Local imports:
 import input
-
 
 # TODO: MODULE PURPOSE
 #   --Features          [DONE]
@@ -92,14 +92,12 @@ def haar_feature_pipeline(images):
     return feature_matrix
 
 
-def test_features():
+def test_features(images):
     """
     Function to be used for testing purposes only!!
 
     :return: feature_matrix
     """
-    train_images_resized, _ = input.test_input()
-
-    feature_matrix = haar_feature_pipeline(train_images_resized)
+    feature_matrix = haar_feature_pipeline(images)
 
     return feature_matrix

@@ -1,12 +1,10 @@
 import csv
 import cv2
 import math
-import matplotlib.pyplot as plt
-# import numpy as np
 import numpy as np
+import matplotlib.pyplot as plt
 
 from skimage.color import rgb2gray
-
 
 # TODO: MODULE PURPOSE
 #   --Loading images and labels         [DONE]
@@ -119,25 +117,20 @@ def extract_single_class(images, labels, class_number, features=None, extract_fe
             if extract_features:
                 features_extracted.append(features[i])
 
-    # print(np.asarray(images).shape)
-    # print(np.asarray(images_extracted).shape)
-    # print(np.asarray(features).shape)
-    # print(np.asarray(features_extracted).shape)
-
     if extract_features:
         return images_extracted, features_extracted
     else:
         return images_extracted
 
 
-def test_input():
+def test_input(grayscale=True, image_range=5):
     """
     Function to be used for testing purposes only!!
 
     :return: train_images_resized : A list of images (grayscale and resized)
     :return: train_labels : A list of labels
     """
-    train_images, train_labels = read_traffic_signs('', image_range=5)
+    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale)
     train_images_resized = resize_images(train_images)
 
     return train_images_resized, train_labels
