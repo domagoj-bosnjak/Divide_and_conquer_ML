@@ -16,6 +16,8 @@ import features
 #   --Clustering evaluation  [DONE]
 #   --Reduction              [DONE]
 
+dr_status = {}
+
 
 def prepare_images_for_clustering(images):
     """
@@ -104,10 +106,17 @@ def data_reduction(images, clustering_labels):
     return indices_to_save
 
 
-def data_reduction_main(num_of_classes):
+def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indices.csv', images=None, labels=None):
     dr_start = time.time()
 
-    train_images_resized, train_labels = input.test_input(grayscale=True, image_range=num_of_classes)
+    if not images and labels:
+        print("No precomputed images for data reduction.(default state)")
+        train_images_resized, train_labels = input.test_input(grayscale=True, image_range=num_of_classes)
+    else:
+        print("Using precomputed images for data reduction.")
+        train_images_resized = images
+        train_labels = labels
+
     feature_matrix = features.test_features(train_images_resized)
 
     current_start_index = 0  # First index of image in a class
@@ -115,6 +124,9 @@ def data_reduction_main(num_of_classes):
     print("Images shape before reduction: ", np.asarray(train_images_resized).shape)
     print("Labels shape before reduction: ", np.asarray(train_labels).shape)
     print("Feature matrix dimensions:", np.asarray(feature_matrix).shape)
+
+    dr_status['Feature_matrix_shape'] = np.asarray(feature_matrix).shape
+
     for i in range(num_of_classes):
         print("CLASS: ", str(i))
         # Extract single class
@@ -131,9 +143,6 @@ def data_reduction_main(num_of_classes):
         indices_dr = data_reduction(images_class, best_labels)
         indices_to_save = np.asarray(indices_dr) + current_start_index
 
-        print("Images in this class:", len(images_class))
-        print("Indices to save min max:", np.min(indices_to_save), max(indices_to_save))
-
         if i == 0:
             data_reduction_indices = indices_to_save
         else:
@@ -141,20 +150,27 @@ def data_reduction_main(num_of_classes):
             temp.extend(list(indices_to_save))
             data_reduction_indices = np.asarray(temp)
 
-        print("C:Broj indeksa koje cuvam:", data_reduction_indices.shape)
-        print("C:", np.min(data_reduction_indices), np.max(data_reduction_indices))
-
         class_length = len(images_class)
         current_start_index = current_start_index + class_length
 
-    print("FINAL: Broj indeksa koje cuvam:", data_reduction_indices.shape)
-    print(np.min(data_reduction_indices), np.max(data_reduction_indices))
-
     dr_end = time.time()
     print("Data reduction total time in minutes: ", (dr_end-dr_start)/60.0)
+    dr_status['Total_time'] = (dr_end-dr_start)/60.0
+    dr_status['Total number of images'] = len(train_images_resized)
+    dr_status['Total number of images kept'] = len(data_reduction_indices)
 
     data_reduction_indices = np.asarray([int(x) for x in data_reduction_indices])
-    np.savetxt('reduced_indices.csv', data_reduction_indices, delimiter=',')
+    np.savetxt(output_filename, data_reduction_indices, delimiter=',')
+
+
+def data_reduction_alternate(num_of_classes=43, output_filename='./model/reduced_indices_alternate.csv'):
+
+    train_images_resized, train_labels, test_images, test_labels = input.test_input_alternate(grayscale=False,
+                                                                                              image_range=num_of_classes)
+    data_reduction_main(num_of_classes=num_of_classes, output_filename=output_filename,
+                        images=input.images_grayscale(train_images_resized), labels=train_labels)
+
+    return train_images_resized, train_labels, test_images, test_labels
 
 
 if __name__ == "__main__":

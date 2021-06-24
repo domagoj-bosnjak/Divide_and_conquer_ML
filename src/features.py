@@ -58,11 +58,12 @@ def haar_feature_pipeline(images):
     """
     integral_images = integral_image_multiple(images)
 
+    # TYPE 2-x
     haar = haar_compute(integral_images=integral_images,
                         top_left_x=5,
                         top_left_y=15,
                         width_=6,
-                        height_=5,
+                        height_=6,
                         feature_type_='type-2-x')
     feature_matrix = np.array(haar)
     haar = haar_compute(integral_images=integral_images,
@@ -74,8 +75,8 @@ def haar_feature_pipeline(images):
     feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
 
     haar = haar_compute(integral_images=integral_images,
-                        top_left_x=5,
-                        top_left_y=15,
+                        top_left_x=15,
+                        top_left_y=5,
                         width_=6,
                         height_=6,
                         feature_type_='type-2-x')
@@ -87,6 +88,48 @@ def haar_feature_pipeline(images):
                         width_=6,
                         height_=6,
                         feature_type_='type-2-x')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    #TYPE 2-y
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=5,
+                        top_left_y=15,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-2-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=5,
+                        top_left_y=5,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-2-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=15,
+                        top_left_y=5,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-2-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=15,
+                        top_left_y=15,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-2-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    # TYPE 4 (chessboard)
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=10,
+                        top_left_y=10,
+                        width_=10,
+                        height_=10,
+                        feature_type_='type-4')
     feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
 
     return feature_matrix

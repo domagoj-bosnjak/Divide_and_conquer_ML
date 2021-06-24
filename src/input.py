@@ -3,12 +3,58 @@ import cv2
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+from imgaug import augmenters as iaa
 
+from sklearn.model_selection import train_test_split
 from skimage.color import rgb2gray
+from PIL import Image
 
 # TODO: MODULE PURPOSE
 #   --Loading images and labels         [DONE]
 #   --Equalizing dimensions of images   [DONE]
+
+def augment_images_function(images, p):
+    """
+    Augmentations with probability p
+    """
+    augs = iaa.SomeOf((2,4),
+                      [
+                          iaa.Crop(px=(0,4)), # crop images from each size 0-4px (randomly chosen)
+                          iaa.Affine(scale={"x": (0.8,1.2), "y":(-0.2, 0.2)}),
+                          iaa.Affine(rotate=(-45,45)), # rotate by -45 to +45 degrees
+                          iaa.Affine(shear=(-10,10)) # shear by -10 to +10 degrees
+                      ])
+
+    sequential = iaa.Sequential([iaa.Sometimes(p, augs)])
+    result = sequential.augment_images(images)
+    return result
+
+def augmentation(images, labels, min_images_in_class=400):
+    class_size = [0] * 43
+    for i in range(len(trainLabels)):
+        class_size = int(trainLabels[i])
+        class_size[label] += 1
+
+    for i in range(43):
+        if class_size[i] < min_images_in_class:
+            num_missing = min_images_in_class - class_size[i]
+            images_for_augmentation = []
+            labels_for_augmentation = []
+
+            for j in range(num_missing):
+                image_index = random.choice(np.where(labels == i)[0])
+                images_for_augmentation.append(images[image_index])
+                labels_for_augmentation.append(lagels[image_index])
+
+            augmented_class = augment_images_function(images_for_augmentation, 1)
+            augmented_class = np.array(augmented_class)
+            augmented_labels = np.array(labels_for_augmentation)
+
+            images = np.concatenate((images, augmented_class), axis=0)
+            labels = np.concatenate((labels, augmented_labels), axis=0)
+
+    return images, labels
 
 
 def read_traffic_signs(root_path, image_range=43, grayscale=True):
@@ -27,7 +73,6 @@ def read_traffic_signs(root_path, image_range=43, grayscale=True):
     images = []
     labels = []
     for c in range(0, image_range):
-        # OLD VERSION: prefix = root_path + '/' + 'Images' + '/' + format(c, '05d') + '/'
         prefix = root_path + 'Images' + '/' + format(c, '05d') + '/'  # path name
 
         gt_file = open(prefix + 'GT-' + format(c, '05d') + '.csv')  # read CSV
@@ -41,11 +86,35 @@ def read_traffic_signs(root_path, image_range=43, grayscale=True):
 
         gt_file.close()
 
-    # Can this be avoided?!
     if grayscale:
         images = images_grayscale(images)
 
     return images, labels
+
+
+def read_test_data(root_path='', grayscale=True):
+    images = []
+    labels = []
+
+    prefix = root_path + 'Images_test/' # path name
+
+    gt_file = open(prefix + 'GT-final_test.csv')  # read CSV
+    gt_reader = csv.reader(gt_file, delimiter=';')
+
+    next(gt_reader)
+
+    for row in gt_reader:
+        images.append(plt.imread(prefix + row[0]))
+        labels.append(row[7])
+
+    gt_file.close()
+
+    images_resized = resize_images(images)
+
+    if grayscale:
+        images_resized = images_grayscale(images_resized)
+
+    return images_resized, labels
 
 
 def images_grayscale(images):
@@ -134,3 +203,39 @@ def test_input(grayscale=True, image_range=5):
     train_images_resized = resize_images(train_images)
 
     return train_images_resized, train_labels
+
+
+def test_input_alternate(grayscale=False, image_range=43):
+
+    train_images = []
+    test_images = []
+
+    train_labels = []
+    test_labels = []
+
+    images, labels = test_input(grayscale=grayscale, image_range=image_range)
+
+    current_start_index = 0
+
+    for i in range(43):
+        images_class = extract_single_class(images, labels, str(i))
+        len_class = len(images_class)
+
+        labels_class = [str(i)] * len_class
+
+        X_train, X_test, y_train, y_test = train_test_split(images_class, labels_class, test_size=0.001, random_state=42)
+
+        train_images.extend(X_train)
+        train_labels.extend(y_train)
+
+        test_images.extend(X_test)
+        test_labels.extend(y_test)
+
+        class_length = len_class
+        current_start_index = current_start_index + class_length
+
+    return train_images, train_labels, test_images, test_labels
+
+
+# if __name__ == "__main__":
+#     read_test_data()
