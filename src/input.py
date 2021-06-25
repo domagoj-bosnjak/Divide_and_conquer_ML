@@ -9,6 +9,7 @@ from imgaug import augmenters as iaa
 from sklearn.model_selection import train_test_split
 from skimage.color import rgb2gray
 from PIL import Image
+import random
 
 # TODO: MODULE PURPOSE
 #   --Loading images and labels         [DONE]
@@ -21,7 +22,7 @@ def augment_images_function(images, p):
     augs = iaa.SomeOf((2,4),
                       [
                           iaa.Crop(px=(0,4)), # crop images from each size 0-4px (randomly chosen)
-                          iaa.Affine(scale={"x": (0.8,1.2), "y":(-0.2, 0.2)}),
+                          iaa.Affine(scale={"x": (0.8,1.2), "y":(0.8, 1.2)}),
                           iaa.Affine(rotate=(-45,45)), # rotate by -45 to +45 degrees
                           iaa.Affine(shear=(-10,10)) # shear by -10 to +10 degrees
                       ])
@@ -32,20 +33,27 @@ def augment_images_function(images, p):
 
 def augmentation(images, labels, min_images_in_class=400):
     class_size = [0] * 43
-    for i in range(len(trainLabels)):
-        class_size = int(trainLabels[i])
-        class_size[label] += 1
+    class_indexes = [[] for i in range(43)]
+
+    for i in range(len(labels)):
+        current_class = int(labels[i])
+        class_size[current_class] += 1
+        class_indexes[current_class].append(i)
+    #
+    # for i in range(43):
+    #     print(class_size[i], len(class_indexes[i]))
 
     for i in range(43):
         if class_size[i] < min_images_in_class:
+            print("Class", i, "is too small! Size is", class_size[i])
             num_missing = min_images_in_class - class_size[i]
             images_for_augmentation = []
             labels_for_augmentation = []
 
             for j in range(num_missing):
-                image_index = random.choice(np.where(labels == i)[0])
+                image_index = random.choice(class_indexes[i])
                 images_for_augmentation.append(images[image_index])
-                labels_for_augmentation.append(lagels[image_index])
+                labels_for_augmentation.append(labels[image_index])
 
             augmented_class = augment_images_function(images_for_augmentation, 1)
             augmented_class = np.array(augmented_class)
@@ -57,7 +65,7 @@ def augmentation(images, labels, min_images_in_class=400):
     return images, labels
 
 
-def read_traffic_signs(root_path, image_range=43, grayscale=True):
+def read_traffic_signs(root_path, image_range=43, grayscale=True, augmentation_flag=False):
     """
     Reading images and labels from files
 
@@ -88,6 +96,15 @@ def read_traffic_signs(root_path, image_range=43, grayscale=True):
 
     if grayscale:
         images = images_grayscale(images)
+
+    if augmentation_flag:
+        print("PRIJE AUGMENTACIJE")
+        print(len(images))
+        print(len(labels))
+        images, labels = augmentation(images, labels, min_images_in_class=400)
+        print("NAKON AUGMENTACIJE")
+        print(images.size)
+        print(labels.size)
 
     return images, labels
 
@@ -199,7 +216,7 @@ def test_input(grayscale=True, image_range=5):
     :return: train_images_resized : A list of images (grayscale and resized)
     :return: train_labels : A list of labels
     """
-    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale)
+    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale, augmentation_flag=True)
     train_images_resized = resize_images(train_images)
 
     return train_images_resized, train_labels

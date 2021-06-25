@@ -335,7 +335,7 @@ def input_and_preprocess_alternate(data_reduction_filename='./model/reduced_indi
 
 def cnn_pipeline(status_filename,
                  model_output_name='./model/conv.pt',
-                 plot_output_name,
+                 plot_output_name='./model/loss_plot.png',
                  data_reduction_flag=False,
                  data_reduction_filename='./model/reduced_indices.csv',
                  main_flag=True):
@@ -398,7 +398,7 @@ if __name__ == "__main__":
     #              main_flag=True)
     cnn_pipeline(status_filename='./model/cnn_status_dr.json',
                  model_output_name=output_file_2,
-                 plot_output_name='./model/loss_plot_dr.png'
+                 plot_output_name='./model/loss_plot_dr.png',
                  data_reduction_flag=True,
                  main_flag=True)
 
