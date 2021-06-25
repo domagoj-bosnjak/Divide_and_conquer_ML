@@ -7,7 +7,7 @@ Kod je podijeljen u četiri dijela. Na početku svake skripte ukratko je naveden
 
 Ukratko, skripte su:
 
-input.py            - učitavanje i preprocesiranje podataka
-features.py         - ekstrakcija i odabir značajki
-data_reduction.py   - skripta za provođenje i spremanje data reduction algoritma
-cnn.py              - skripta za provedbu i testiranje konvolucijske neuronske mreže
+input.py            - učitavanje i preprocesiranje podataka  
+features.py         - ekstrakcija i odabir značajki  
+data_reduction.py   - skripta za provođenje i spremanje data reduction algoritma  
+cnn.py              - skripta za provedbu i testiranje konvolucijske neuronske mreže  
