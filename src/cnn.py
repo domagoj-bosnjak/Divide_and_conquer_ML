@@ -227,7 +227,9 @@ def evaluate_model(testset, batch_size, model_file):
     print("\nCorrectly classified", correct, "out of a total of", total, "images")
     print("Non-rounded test accuracy: ", 100.0*float(correct)/float(total))
 
-    cnn_status['Results']['Test_accuracy'] = 100.0*float(correct)/float(total)
+    # cnn_status['Results']['Test_accuracy'] = 100.0*float(correct)/float(total)
+
+    return 100.0*float(correct)/float(total)
 
 
 def preprocess_labels(labels):
@@ -275,11 +277,11 @@ def separate_images(images, labels, data_reduction_indices):
     return images_selected, labels_selected, images_not_selected, labels_not_selected
 
 
-def input_and_preprocess(number_of_classes, data_reduction_indices=None):
+def input_and_preprocess(number_of_classes, data_reduction_indices=None, augmentation_flag=False):
     """
     Load and preprocess data for use in CNN
     """
-    data, labels = input.test_input(grayscale=False, image_range=number_of_classes)
+    data, labels = input.test_input(grayscale=False, image_range=number_of_classes, augmentation_flag=augmentation_flag)
 
     if data_reduction_indices:
         data, labels, additional_data, additional_labels = separate_images(data, labels, data_reduction_indices)
@@ -306,8 +308,8 @@ def input_and_preprocess(number_of_classes, data_reduction_indices=None):
     return train_data, test_data
 
 
-def input_and_preprocess_alternate(data_reduction_filename='./model/reduced_indices_alternate.csv'):
-    train_images, train_labels, test_images, test_labels = data_reduction.data_reduction_alternate()
+def input_and_preprocess_alternate(data_reduction_filename='./model/reduced_indices_alternate.csv', augmentation_flag=False):
+    train_images, train_labels, test_images, test_labels = data_reduction.data_reduction_alternate(augmentation_flag=augmentation_flag)
 
     y_train_before_rd = preprocess_labels(train_labels)
     y_test = preprocess_labels(test_labels)
@@ -338,6 +340,7 @@ def cnn_pipeline(status_filename,
                  plot_output_name='./model/loss_plot.png',
                  data_reduction_flag=False,
                  data_reduction_filename='./model/reduced_indices.csv',
+                 augmentation_flag=False,
                  main_flag=True):
     start_time = time.time()
 
@@ -351,12 +354,13 @@ def cnn_pipeline(status_filename,
 
             # input
             train_data, test_data = input_and_preprocess(number_of_classes=43,
-                                                         data_reduction_indices=data_reduction_indices)
+                                                         data_reduction_indices=data_reduction_indices,
+                                                         augmentation_flag=augmentation_flag)
         else:
             # input
-            train_data, test_data = input_and_preprocess(number_of_classes=43)
+            train_data, test_data = input_and_preprocess(number_of_classes=43, augmentation_flag=augmentation_flag)
     else:  # alternate_flag
-        train_data, test_data = input_and_preprocess_alternate()
+        train_data, test_data = input_and_preprocess_alternate(augmentation_flag=augmentation_flag)
 
     # starting parameters
     batch_size = 8
@@ -374,35 +378,12 @@ def cnn_pipeline(status_filename,
     train_time_1 = time.time()
     train_model(train_data, n_iters, batch_size, learning_rate, number_of_classes, output_file, plot_output_name, number_of_epochs=20)
     train_time_2 = time.time()
-    evaluate_model(test_data, batch_size, output_file)
+    acc = evaluate_model(test_data, batch_size, output_file)
 
     # print results and computation time
     end_time = time.time()
     cnn_status['Results']['Training_time(minutes)'] = (train_time_2 - train_time_1)/60.0
     cnn_status['Results']['Total_time(minutes)'] = (end_time - start_time)/60.0
-
-    with open(status_filename, 'w') as json_file:
-        json.dump(cnn_status, json_file, indent=2)
-
-if __name__ == "__main__":
-    output_file_1 = './model/conv.pt'
-    plot_output_name_1 = './model/loss_plot.png'
-    output_file_2 = './model/conv_dr.pt'
-    plot_output_name_2 = './model/loss_plot_dr.png'
-
-
-    # cnn_pipeline(status_filename='./model/cnn_status.json',
-    #              model_output_name=output_file_1,
-    #              plot_output_name='./model/loss_plot.png'
-    #              data_reduction_flag=False,
-    #              main_flag=True)
-    cnn_pipeline(status_filename='./model/cnn_status_dr.json',
-                 model_output_name=output_file_2,
-                 plot_output_name='./model/loss_plot_dr.png',
-                 data_reduction_flag=True,
-                 main_flag=True)
-
-    batch_size = 8
 
     X_test, y_test = input.read_test_data(grayscale=False)
 
@@ -414,13 +395,40 @@ if __name__ == "__main__":
         test_data.append([X_test[i], y_test[i]])
 
     print("\nREAL TEST RESULTS:")
-    #
-    # print("No data reduction:")
-    # evaluate_model(test_data, batch_size, output_file_1)
-    #
-    # print("\n")
+    if data_reduction_flag==False:
+        print("No data reduction:")
+    else:
+        print("With data reduction:")
 
-    print("With data reduction:")
-    evaluate_model(test_data, batch_size, output_file_2)
+    accuracy = evaluate_model(test_data, batch_size, output_file)
+
+    cnn_status['Results']['Accuracy_on_test_set'] = accuracy
+
+    with open(status_filename, 'w') as json_file:
+        json.dump(cnn_status, json_file, indent=2)
+
+if __name__ == "__main__":
+    status_file_1 = './model/cnn_status.json'
+    output_file_1 = './model/conv.pt'
+    plot_output_name_1 = './model/loss_plot.png'
+
+    status_file_2 = './model/cnn_status_dr.json'
+    output_file_2 = './model/conv_dr.pt'
+    plot_output_name_2 = './model/loss_plot_dr.png'
+
+
+    cnn_pipeline(status_filename=status_file_1,
+                 model_output_name=output_file_1,
+                 plot_output_name=plot_output_name_1,
+                 data_reduction_flag=False,
+                 augmentation_flag=True,
+                 main_flag=True)
+
+    cnn_pipeline(status_filename=status_file_2,
+                 model_output_name=output_file_2,
+                 plot_output_name=plot_output_name_2,
+                 data_reduction_flag=True,
+                 augmentation_flag=True,
+                 main_flag=True)
 
 

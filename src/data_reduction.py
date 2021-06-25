@@ -106,12 +106,12 @@ def data_reduction(images, clustering_labels):
     return indices_to_save
 
 
-def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indices.csv', images=None, labels=None):
+def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indices.csv', images=None, labels=None, augmentation_flag=False):
     dr_start = time.time()
 
     if not images and labels:
         print("No precomputed images for data reduction.(default state)")
-        train_images_resized, train_labels = input.test_input(grayscale=True, image_range=num_of_classes)
+        train_images_resized, train_labels = input.test_input(grayscale=True, image_range=num_of_classes, augmentation_flag=augmentation_flag)
     else:
         print("Using precomputed images for data reduction.")
         train_images_resized = images
@@ -163,15 +163,16 @@ def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indi
     np.savetxt(output_filename, data_reduction_indices, delimiter=',')
 
 
-def data_reduction_alternate(num_of_classes=43, output_filename='./model/reduced_indices_alternate.csv'):
+def data_reduction_alternate(num_of_classes=43, output_filename='./model/reduced_indices_alternate.csv', augmentation_flag=False):
 
     train_images_resized, train_labels, test_images, test_labels = input.test_input_alternate(grayscale=False,
-                                                                                              image_range=num_of_classes)
+                                                                                              image_range=num_of_classes,
+                                                                                              augmentation_flag=augmentation_flag)
     data_reduction_main(num_of_classes=num_of_classes, output_filename=output_filename,
                         images=input.images_grayscale(train_images_resized), labels=train_labels)
 
     return train_images_resized, train_labels, test_images, test_labels
 
-
-if __name__ == "__main__":
-    data_reduction_main(43)
+#
+# if __name__ == "__main__":
+#     data_reduction_main(43)

@@ -209,20 +209,20 @@ def extract_single_class(images, labels, class_number, features=None, extract_fe
         return images_extracted
 
 
-def test_input(grayscale=True, image_range=5):
+def test_input(grayscale=True, image_range=5, augmentation_flag=False):
     """
     Function to be used for testing purposes only!!
 
     :return: train_images_resized : A list of images (grayscale and resized)
     :return: train_labels : A list of labels
     """
-    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale, augmentation_flag=True)
+    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale, augmentation_flag=augmentation_flag)
     train_images_resized = resize_images(train_images)
 
     return train_images_resized, train_labels
 
 
-def test_input_alternate(grayscale=False, image_range=43):
+def test_input_alternate(grayscale=False, image_range=43, augmentation_flag=False):
 
     train_images = []
     test_images = []
@@ -230,7 +230,7 @@ def test_input_alternate(grayscale=False, image_range=43):
     train_labels = []
     test_labels = []
 
-    images, labels = test_input(grayscale=grayscale, image_range=image_range)
+    images, labels = test_input(grayscale=grayscale, image_range=image_range, augmentation_flag=augmentation_flag)
 
     current_start_index = 0
 
