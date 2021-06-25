@@ -1,10 +1,10 @@
 # Global imports
+import json
 import math
 import numpy as np
 import time
 
 from s_dbw import S_Dbw
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.cluster import OPTICS
 
 # Local imports
@@ -17,6 +17,7 @@ import features
 #   --Reduction              [DONE]
 
 dr_status = {}
+dr_status['Elements_kept_per_class'] = {}
 
 
 def prepare_images_for_clustering(images):
@@ -46,8 +47,6 @@ def clustering(features_matrix, optics_min_samples=2):
     clustering_optics = OPTICS(min_samples=optics_min_samples).fit(features_matrix)
 
     noise_points = np.count_nonzero(clustering_optics.labels_ == -1)
-
-    # print("All together ", len(np.unique(clustering_optics.labels_)) + noise_points - 1, "clusters and noise points.")
 
     return clustering_optics.labels_
 
@@ -106,29 +105,44 @@ def data_reduction(images, clustering_labels):
     return indices_to_save
 
 
-def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indices.csv', images=None, labels=None, augmentation_flag=False):
+def data_reduction_main(num_of_classes=43,
+                        feature_selection=False,
+                        feature_selection_percent=50,
+                        output_filename='./model/reduced_indices.csv',
+                        status_filename='./model/dr_status.json',
+                        augmentation_flag=True):
+    """
+    Main data reduction function
+
+    :param num_of_classes           : How many GTSRB classes to use
+    :param feature_selection        : should feature selection be performed
+    :param feature_selection_percent: which percentage(0-100) of the features should be discarded
+    :param output_filename:         : data reduction output indices
+    :param status_filename:         : data reduction status JSON filename
+    :param augmentation_flag:       : should augmentation be performed
+    """
+
     dr_start = time.time()
 
-    if not images and labels:
-        print("No precomputed images for data reduction.(default state)")
-        train_images_resized, train_labels = input.test_input(grayscale=True, image_range=num_of_classes, augmentation_flag=augmentation_flag)
-    else:
-        print("Using precomputed images for data reduction.")
-        train_images_resized = images
-        train_labels = labels
+    train_images_resized, train_labels = input.test_input(grayscale=True,
+                                                          image_range=num_of_classes,
+                                                          augmentation_flag=augmentation_flag)
 
-    feature_matrix = features.test_features(train_images_resized)
+    feature_matrix = features.test_features(train_images_resized,
+                                            feature_selection=feature_selection,
+                                            feature_selection_percent=feature_selection_percent,
+                                            labels=train_labels)
 
     current_start_index = 0  # First index of image in a class
 
     print("Images shape before reduction: ", np.asarray(train_images_resized).shape)
-    print("Labels shape before reduction: ", np.asarray(train_labels).shape)
     print("Feature matrix dimensions:", np.asarray(feature_matrix).shape)
 
     dr_status['Feature_matrix_shape'] = np.asarray(feature_matrix).shape
 
     for i in range(num_of_classes):
         print("CLASS: ", str(i))
+
         # Extract single class
         images_class, features_class = input.extract_single_class(images=train_images_resized, labels=train_labels,
                                                                   class_number=str(i), extract_features=True,
@@ -153,8 +167,13 @@ def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indi
         class_length = len(images_class)
         current_start_index = current_start_index + class_length
 
+        class_name = "Class_" + str(i)
+        dr_status['Elements_kept_per_class'][class_name] = len(indices_to_save)
+
     dr_end = time.time()
     print("Data reduction total time in minutes: ", (dr_end-dr_start)/60.0)
+
+    # update data reduction status
     dr_status['Total_time'] = (dr_end-dr_start)/60.0
     dr_status['Total number of images'] = len(train_images_resized)
     dr_status['Total number of images kept'] = len(data_reduction_indices)
@@ -162,17 +181,21 @@ def data_reduction_main(num_of_classes=43, output_filename='./model/reduced_indi
     data_reduction_indices = np.asarray([int(x) for x in data_reduction_indices])
     np.savetxt(output_filename, data_reduction_indices, delimiter=',')
 
+    # write status file to JSON
+    with open(status_filename, 'w') as json_file:
+        json.dump(dr_status, json_file, indent=2)
 
-def data_reduction_alternate(num_of_classes=43, output_filename='./model/reduced_indices_alternate.csv', augmentation_flag=False):
 
-    train_images_resized, train_labels, test_images, test_labels = input.test_input_alternate(grayscale=False,
-                                                                                              image_range=num_of_classes,
-                                                                                              augmentation_flag=augmentation_flag)
-    data_reduction_main(num_of_classes=num_of_classes, output_filename=output_filename,
-                        images=input.images_grayscale(train_images_resized), labels=train_labels)
+if __name__ == "__main__":
+    data_reduction_main(num_of_classes=43,
+                        feature_selection=False,
+                        output_filename='./model/reduced_indices.csv',
+                        status_filename='./model/dr_status.json',
+                        augmentation_flag=False)
 
-    return train_images_resized, train_labels, test_images, test_labels
-
-#
-# if __name__ == "__main__":
-#     data_reduction_main(43)
+    data_reduction_main(num_of_classes=43,
+                        feature_selection=True,
+                        feature_selection_percent=50,
+                        output_filename='./model/reduced_indices_fs.csv',
+                        status_filename='./model/dr_status_fs.json',
+                        augmentation_flag=False)

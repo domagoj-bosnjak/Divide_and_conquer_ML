@@ -1,30 +1,25 @@
+# Global imports
 import numpy as np
 import json
 import time
 import torch
 import torch.nn as nn
-# import torchvision
-# import torchvision.transforms as transforms
 from torch.autograd import Variable
-# import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torch.utils.data import dataset
 from sklearn.model_selection import train_test_split
 import json
 import matplotlib.pyplot as plt
 
-
-# convolutional network
-# two convolutional layers and one fully connected layer
-import data_reduction
+# Local imports
 import input
 
 # TODO:
-#   CNN                                         [DONE]
+#   CNN class                                   [DONE]
+#   Training and evaluating                     [DONE]
 #   Verification                                [DONE]
-#   Fancy output, like a status or something    [DONE]
+#   Fancy JSON output                           [DONE]
 
-cnn_status = {}
+cnn_status = {}     # saving CNN information for output
 cnn_status['Parameters'] = {}
 cnn_status['Results'] = {}
 
@@ -33,13 +28,13 @@ class conv_network(nn.Module):
     def __init__(self, number_of_classes=43):
         super(conv_network, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=100, kernel_size=(5,5), stride=1, padding=2)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=100, kernel_size=(5, 5), stride=1, padding=2)
         self.batch1 = nn.BatchNorm2d(100)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=2)  # default stride = kernel_size
 
         # Constraints for level 2
-        self.conv2 = nn.Conv2d(in_channels=100, out_channels=150, kernel_size=(3,3), stride=1, padding=2)
+        self.conv2 = nn.Conv2d(in_channels=100, out_channels=150, kernel_size=(3, 3), stride=1, padding=2)
         self.batch2 = nn.BatchNorm2d(150)
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=2)
@@ -50,21 +45,7 @@ class conv_network(nn.Module):
         self.relu3 = nn.ReLU()
         self.pool3 = nn.MaxPool2d(kernel_size=2)
 
-        # # Constraints for level 4
-        # self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=2)
-        # self.batch4 = nn.BatchNorm2d(128)
-        # self.relu4 = nn.LeakyReLU()
-        # self.pool4 = nn.AvgPool2d(kernel_size=2)
-        #
-        # # Constraints for level 5
-        # self.conv5 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=2)
-        # self.batch5 = nn.BatchNorm2d(256)
-        # self.relu5 = nn.LeakyReLU()
-        # self.pool5 = nn.AvgPool2d(kernel_size=2)
-
         # Defining the Linear layer
-
-        # self.conv_drop = nn.Dropout2d()
 
         self.fc1 = nn.Linear(250 * 5 * 5, 350)
         self.fc2 = nn.Linear(350, number_of_classes)
@@ -99,40 +80,8 @@ class conv_network(nn.Module):
         # Max Pool 3
         out = self.pool3(out)
 
-        # out = self.conv_drop(out)
-
-        # # Perform forward pass -------> Someone's idea!
-        # x = self.bn1(F.max_pool2d(F.leaky_relu(self.conv1(x)),2))
-        # x = self.conv_drop(x)
-        # x = self.bn2(F.max_pool2d(F.leaky_relu(self.conv2(x)),2))
-        # x = self.conv_drop(x)
-        # x = self.bn3(F.max_pool2d(F.leaky_relu(self.conv3(x)),2))
-        # x = self.conv_drop(x)
-        # x = x.view(-1, 250*2*2)
-        # x = F.relu(self.fc1(x))
-        # x = F.dropout(x, training=self.training)
-        # x = self.fc2(x)
-
-        # # # Conv 4
-        # out = self.conv4(out)
-        # out = self.batch4(out)
-        # out = self.relu4(out)
-        #
-        # # Max Pool 4
-        # out = self.pool4(out)
-        #
-        # # # Conv 5
-        # out = self.conv5(out)
-        # out = self.batch5(out)
-        # out = self.relu5(out)
-        #
-        # # Max Pool 5
-        # out = self.pool5(out)
-
-        # print("Afer pool6 size:", out.size())
-
-        # print(out.size())
         out = out.view(out.size(0), -1)
+
         # Linear Layer
         out = self.fc1(out)
         out = self.fc2(out)
@@ -140,8 +89,11 @@ class conv_network(nn.Module):
         return out
 
 
-def train_model(trainset, n_iters, batch_size, learning_rate, number_of_classes, output_name, plot_output_name, number_of_epochs=None):
-
+def train_model(trainset, n_iters, batch_size, learning_rate, number_of_classes, output_name, plot_output_name,
+                number_of_epochs=None):
+    """
+    Model training function
+    """
     if number_of_epochs:
         num_epochs = number_of_epochs
     else:
@@ -200,6 +152,9 @@ def train_model(trainset, n_iters, batch_size, learning_rate, number_of_classes,
 
 
 def evaluate_model(testset, batch_size, model_file):
+    """
+    Model accuracy evaluation
+    """
 
     test_loader = DataLoader(dataset=testset, batch_size=batch_size, shuffle=True)
 
@@ -211,7 +166,6 @@ def evaluate_model(testset, batch_size, model_file):
     correct = 0
     total = 0
 
-    # for images, labels in test_loader:
     for i, (images, labels) in enumerate(test_loader, 0):
         images = Variable(images.float())
 
@@ -223,11 +177,6 @@ def evaluate_model(testset, batch_size, model_file):
 
         total += labels.size(0)
         correct += (predicted == temp_labels).sum().item()
-
-    print("\nCorrectly classified", correct, "out of a total of", total, "images")
-    print("Non-rounded test accuracy: ", 100.0*float(correct)/float(total))
-
-    # cnn_status['Results']['Test_accuracy'] = 100.0*float(correct)/float(total)
 
     return 100.0*float(correct)/float(total)
 
@@ -258,7 +207,7 @@ def preprocess_data(data):
 
 def separate_images(images, labels, data_reduction_indices):
     """
-    Separate images and labels as per the data reduction
+    Separate images and labels into selected and non-selected as per the data reduction
     """
     images_selected = []
     images_not_selected = []
@@ -308,63 +257,39 @@ def input_and_preprocess(number_of_classes, data_reduction_indices=None, augment
     return train_data, test_data
 
 
-def input_and_preprocess_alternate(data_reduction_filename='./model/reduced_indices_alternate.csv', augmentation_flag=False):
-    train_images, train_labels, test_images, test_labels = data_reduction.data_reduction_alternate(augmentation_flag=augmentation_flag)
-
-    y_train_before_rd = preprocess_labels(train_labels)
-    y_test = preprocess_labels(test_labels)
-
-    X_train_before_rd = preprocess_data(train_images)
-    X_test = preprocess_data(test_images)
-
-    # load data reduction indices
-    data_reduction_indices = np.loadtxt(data_reduction_filename, delimiter=',')
-    data_reduction_indices = [int(x) for x in data_reduction_indices]
-
-    X_train, y_train, _, _ =\
-        separate_images(X_train_before_rd, y_train_before_rd, data_reduction_indices)
-
-    train_data = []
-    for i in range(len(X_train)):
-        train_data.append([X_train[i], y_train[i]])
-
-    test_data = []
-    for i in range(len(X_test)):
-        test_data.append([X_test[i], y_test[i]])
-
-    return train_data, test_data
-
-
 def cnn_pipeline(status_filename,
                  model_output_name='./model/conv.pt',
                  plot_output_name='./model/loss_plot.png',
                  data_reduction_flag=False,
                  data_reduction_filename='./model/reduced_indices.csv',
-                 augmentation_flag=False,
-                 main_flag=True):
+                 augmentation_flag=False):
+    """
+    :param status_filename          : CNN status JSON file
+    :param model_output_name        : Trained model output file
+    :param plot_output_name         : Loss plot output file
+    :param data_reduction_flag      : Is data reduction used
+    :param data_reduction_filename  : If used, filename of data reduction indices
+    :param augmentation_flag        : Is augmentation used
+    """
     start_time = time.time()
 
-    # input
-    # train_data, test_data = input_and_preprocess(number_of_classes=43)
-    if main_flag:
-        # data reduction or not
-        if data_reduction_flag:
-            data_reduction_indices = np.loadtxt(data_reduction_filename, delimiter=',')
-            data_reduction_indices = [int(x) for x in data_reduction_indices]
+    # data reduction or not
+    if data_reduction_flag:
+        data_reduction_indices = np.loadtxt(data_reduction_filename, delimiter=',')
+        data_reduction_indices = [int(x) for x in data_reduction_indices]
 
-            # input
-            train_data, test_data = input_and_preprocess(number_of_classes=43,
-                                                         data_reduction_indices=data_reduction_indices,
-                                                         augmentation_flag=augmentation_flag)
-        else:
-            # input
-            train_data, test_data = input_and_preprocess(number_of_classes=43, augmentation_flag=augmentation_flag)
-    else:  # alternate_flag
-        train_data, test_data = input_and_preprocess_alternate(augmentation_flag=augmentation_flag)
+        # input
+        train_data, test_data = input_and_preprocess(number_of_classes=43,
+                                                     data_reduction_indices=data_reduction_indices,
+                                                     augmentation_flag=augmentation_flag)
+    else:
+        # input
+        train_data, test_data = input_and_preprocess(number_of_classes=43, augmentation_flag=augmentation_flag)
+
 
     # starting parameters
     batch_size = 8
-    n_iters = 4000
+    n_iters = 4000  # for auto-determining number of epochs if not set
     learning_rate = 0.001
     number_of_classes = 43
     output_file = model_output_name
@@ -376,7 +301,8 @@ def cnn_pipeline(status_filename,
 
     # train and evaluate
     train_time_1 = time.time()
-    train_model(train_data, n_iters, batch_size, learning_rate, number_of_classes, output_file, plot_output_name, number_of_epochs=20)
+    train_model(train_data, n_iters, batch_size, learning_rate, number_of_classes,
+                output_file, plot_output_name, number_of_epochs=15)
     train_time_2 = time.time()
     acc = evaluate_model(test_data, batch_size, output_file)
 
@@ -394,8 +320,8 @@ def cnn_pipeline(status_filename,
     for i in range(len(X_test)):
         test_data.append([X_test[i], y_test[i]])
 
-    print("\nREAL TEST RESULTS:")
-    if data_reduction_flag==False:
+    print("\n Test results:")
+    if not data_reduction_flag:
         print("No data reduction:")
     else:
         print("With data reduction:")
@@ -407,6 +333,7 @@ def cnn_pipeline(status_filename,
     with open(status_filename, 'w') as json_file:
         json.dump(cnn_status, json_file, indent=2)
 
+
 if __name__ == "__main__":
     status_file_1 = './model/cnn_status.json'
     output_file_1 = './model/conv.pt'
@@ -416,19 +343,16 @@ if __name__ == "__main__":
     output_file_2 = './model/conv_dr.pt'
     plot_output_name_2 = './model/loss_plot_dr.png'
 
-
     cnn_pipeline(status_filename=status_file_1,
                  model_output_name=output_file_1,
                  plot_output_name=plot_output_name_1,
                  data_reduction_flag=False,
-                 augmentation_flag=True,
-                 main_flag=True)
+                 data_reduction_filename=None,  # no data reduction
+                 augmentation_flag=False)
 
     cnn_pipeline(status_filename=status_file_2,
                  model_output_name=output_file_2,
                  plot_output_name=plot_output_name_2,
                  data_reduction_flag=True,
-                 augmentation_flag=True,
-                 main_flag=True)
-
-
+                 data_reduction_filename='./model/reduced_indices.csv',
+                 augmentation_flag=False)

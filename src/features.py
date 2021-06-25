@@ -1,14 +1,15 @@
+# Global imports
 import numpy as np
 
 from skimage import transform
 from skimage.feature import haar_like_feature
 
-# Local imports:
-import input
+from sklearn.feature_selection import SelectPercentile
+from sklearn.feature_selection import f_classif
 
 # TODO: MODULE PURPOSE
 #   --Features          [DONE]
-#   --Feature selection [    ]
+#   --Feature selection [DONE] (implemented in data_reduction script)
 
 
 def integral_image_multiple(images):
@@ -58,6 +59,7 @@ def haar_feature_pipeline(images):
     """
     integral_images = integral_image_multiple(images)
 
+    print("Computing type-2 features.")
     # TYPE 2-x
     haar = haar_compute(integral_images=integral_images,
                         top_left_x=5,
@@ -122,7 +124,42 @@ def haar_feature_pipeline(images):
                         height_=6,
                         feature_type_='type-2-y')
     feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+    
+    # TYPE 3
+    print("Computing type-3 features.")
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=5,
+                        top_left_y=15,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-3-x')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
 
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=5,
+                        top_left_y=5,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-3-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=15,
+                        top_left_y=5,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-3-x')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    haar = haar_compute(integral_images=integral_images,
+                        top_left_x=15,
+                        top_left_y=15,
+                        width_=6,
+                        height_=6,
+                        feature_type_='type-3-y')
+    feature_matrix = np.concatenate((feature_matrix, np.asarray(haar)), axis=1)
+
+    print("Computing type-4 features.")
     # TYPE 4 (chessboard)
     haar = haar_compute(integral_images=integral_images,
                         top_left_x=10,
@@ -135,7 +172,7 @@ def haar_feature_pipeline(images):
     return feature_matrix
 
 
-def test_features(images):
+def test_features(images, feature_selection=False, labels=None, feature_selection_percent=50):
     """
     Function to be used for testing purposes only!!
 
@@ -143,4 +180,11 @@ def test_features(images):
     """
     feature_matrix = haar_feature_pipeline(images)
 
+    print("Performing feature selection, reduction by", feature_selection_percent, "percent.")
+    if feature_selection:
+        feature_matrix = SelectPercentile(f_classif, percentile=feature_selection_percent).fit_transform(feature_matrix,
+                                                                                                         labels)
+
     return feature_matrix
+
+

@@ -1,37 +1,46 @@
+# Global imports
 import csv
 import cv2
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 from imgaug import augmenters as iaa
-
-from sklearn.model_selection import train_test_split
 from skimage.color import rgb2gray
-from PIL import Image
 import random
 
 # TODO: MODULE PURPOSE
 #   --Loading images and labels         [DONE]
+#   --Grayscaling images                [DONE]
 #   --Equalizing dimensions of images   [DONE]
+#   --Data augmentation                 [DONE]
+
 
 def augment_images_function(images, p):
     """
     Augmentations with probability p
     """
-    augs = iaa.SomeOf((2,4),
+    augs = iaa.SomeOf((2, 4),
                       [
-                          iaa.Crop(px=(0,4)), # crop images from each size 0-4px (randomly chosen)
+                          iaa.Crop(px=(0, 4)),  # crop images from each size 0-4px (randomly chosen)
                           iaa.Affine(scale={"x": (0.8,1.2), "y":(0.8, 1.2)}),
-                          iaa.Affine(rotate=(-45,45)), # rotate by -45 to +45 degrees
-                          iaa.Affine(shear=(-10,10)) # shear by -10 to +10 degrees
+                          iaa.Affine(rotate=(-45, 45)),  # rotate by -45 to +45 degrees
+                          iaa.Affine(shear=(-10, 10))  # shear by -10 to +10 degrees
                       ])
 
     sequential = iaa.Sequential([iaa.Sometimes(p, augs)])
     result = sequential.augment_images(images)
     return result
 
+
 def augmentation(images, labels, min_images_in_class=400):
+    """
+    Augmentation function
+
+    :param images               : images for augmentation
+    :param labels               : labels of images
+    :param min_images_in_class  : minimum number of images in class to skip augmentation
+    :return: augmented images and their labels
+    """
     class_size = [0] * 43
     class_indexes = [[] for i in range(43)]
 
@@ -98,13 +107,11 @@ def read_traffic_signs(root_path, image_range=43, grayscale=True, augmentation_f
         images = images_grayscale(images)
 
     if augmentation_flag:
-        print("PRIJE AUGMENTACIJE")
-        print(len(images))
-        print(len(labels))
+        print("Number of images before augmentation:", len(images))
+        # print(len(labels))
         images, labels = augmentation(images, labels, min_images_in_class=400)
-        print("NAKON AUGMENTACIJE")
-        print(images.size)
-        print(labels.size)
+        print("Number of images after augmentation", images.size)
+        # print(labels.size)
 
     return images, labels
 
@@ -113,7 +120,7 @@ def read_test_data(root_path='', grayscale=True):
     images = []
     labels = []
 
-    prefix = root_path + 'Images_test/' # path name
+    prefix = root_path + 'Images_test/'  # path name
 
     gt_file = open(prefix + 'GT-final_test.csv')  # read CSV
     gt_reader = csv.reader(gt_file, delimiter=';')
@@ -182,7 +189,7 @@ def resize_images(images, dimension_m=30, dimension_n=30):
 def extract_single_class(images, labels, class_number, features=None, extract_features=False):
     """
     Extract images that belong to one specific class
-    (OPTIONAL) extract features alongisde the images
+    (OPTIONAL) extract features alongside the images
 
     :param images           : list of images
     :param labels           : list of labels
@@ -211,48 +218,13 @@ def extract_single_class(images, labels, class_number, features=None, extract_fe
 
 def test_input(grayscale=True, image_range=5, augmentation_flag=False):
     """
-    Function to be used for testing purposes only!!
+    Main function to be used for input
 
     :return: train_images_resized : A list of images (grayscale and resized)
     :return: train_labels : A list of labels
     """
-    train_images, train_labels = read_traffic_signs('', image_range=image_range, grayscale=grayscale, augmentation_flag=augmentation_flag)
+    train_images, train_labels = read_traffic_signs(root_path='', image_range=image_range, grayscale=grayscale,
+                                                    augmentation_flag=augmentation_flag)
     train_images_resized = resize_images(train_images)
 
     return train_images_resized, train_labels
-
-
-def test_input_alternate(grayscale=False, image_range=43, augmentation_flag=False):
-
-    train_images = []
-    test_images = []
-
-    train_labels = []
-    test_labels = []
-
-    images, labels = test_input(grayscale=grayscale, image_range=image_range, augmentation_flag=augmentation_flag)
-
-    current_start_index = 0
-
-    for i in range(43):
-        images_class = extract_single_class(images, labels, str(i))
-        len_class = len(images_class)
-
-        labels_class = [str(i)] * len_class
-
-        X_train, X_test, y_train, y_test = train_test_split(images_class, labels_class, test_size=0.001, random_state=42)
-
-        train_images.extend(X_train)
-        train_labels.extend(y_train)
-
-        test_images.extend(X_test)
-        test_labels.extend(y_test)
-
-        class_length = len_class
-        current_start_index = current_start_index + class_length
-
-    return train_images, train_labels, test_images, test_labels
-
-
-# if __name__ == "__main__":
-#     read_test_data()
